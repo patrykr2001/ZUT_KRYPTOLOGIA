@@ -113,6 +113,136 @@ def zad2():
         print(f"Błąd deszyfrowania: {e}")
         print("Prawdopodobnie podano błędne hasło!")
 
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+from Crypto.Random import get_random_bytes
+
+#Demo szyforwania asymetrycznego
+def zad3_szyfr_asym():
+
+    # Generowanie klucza RSA
+    key = RSA.generate(2048)
+
+    # Eksport klucza publicznego i prywatnego
+    private_key = key.export_key()
+    public_key = key.publickey().export_key()
+    print("Klucz publiczny:")
+    print(public_key.decode())
+    print("\nKlucz prywatny:")
+    print(private_key.decode())
+
+    # Tworzenie obiektu szyfrującego z klucza publicznego
+    public_key_obj = RSA.import_key(public_key)
+    cipher_rsa_encrypt = PKCS1_OAEP.new(public_key_obj)
+
+    # Wiadomość do zaszyfrowania
+    message = "Patryk Rakowski 2025".encode("utf-8")
+
+    # Szyfrowanie
+    encrypted_message = cipher_rsa_encrypt.encrypt(message)
+    print("\nZaszyfrowana wiadomość (hex):")
+    print(encrypted_message.hex())
+
+    # Tworzenie obiektu deszyfrującego z klucza prywatnego
+    private_key_obj = RSA.import_key(private_key)
+    cipher_rsa_decrypt = PKCS1_OAEP.new(private_key_obj)
+
+    # Deszyfrowanie
+    decrypted_message = cipher_rsa_decrypt.decrypt(encrypted_message)
+    print("\nOdszyfrowana wiadomość:")
+    print(decrypted_message.decode())
+
+from Crypto.PublicKey import RSA
+from Crypto.Signature import pss
+from Crypto.Hash import SHA256
+
+def zad3_podpis():
+    # 1. Generowanie klucza RSA
+    key = RSA.generate(2048)
+
+    # 2. Eksport kluczy (opcjonalnie - można zapisać do pliku)
+    private_key = key.export_key()
+    public_key = key.publickey().export_key()
+    print("Klucz publiczny:")
+    print(public_key.decode())
+
+    # 3. Wiadomość do podpisania
+    message = "Patryk Rakowski 2025".encode("utf-8")
+
+    # 4. Tworzenie skrótu wiadomości
+    h = SHA256.new(message)
+
+    # 5. Podpisywanie wiadomości kluczem prywatnym przy użyciu RSA PSS
+    signer = pss.new(key)
+    signature = signer.sign(h)
+    print("\nPodpis (hex):")
+    print(signature.hex())
+    # 6. Weryfikacja podpisu kluczem publicznym
+    public_key_obj = RSA.import_key(public_key)
+    verifier = pss.new(public_key_obj)
+    h = SHA256.new(message)
+    try:
+        verifier.verify(h, signature)
+        print("\nPodpis jest poprawny!")
+    except (ValueError, TypeError):
+        print("\nPodpis nie jest poprawny!")
+
+
+def zad3():
+    # i. Generowanie par kluczy asymetrycznych
+    bob_keys = RSA.generate(2048)
+    alice_keys = RSA.generate(2048)
+    
+    # ii. Alicja podpisuje wiadomość własnym kluczem prywatnym
+    alice_message = "Alice do Boba 2025".encode("utf-8")
+    alice_signer = pss.new(alice_keys)
+    alice_message_sign = alice_signer.sign(SHA256.new(alice_message))
+
+    # iii. Alicja szyfruje (wiadomość, podpis) losowym kluczem symetrycznym
+    # Łączymy wiadomość i podpis w jedną paczkę
+    random_symetric_key = get_random_bytes(32)
+    random_iv = get_random_bytes(16)  # Generujemy IV
+    
+    # Łączymy wiadomość i podpis
+    combined_data = alice_message + b"|SEPARATOR|" + alice_message_sign
+    
+    alice_aes_encrypter = AES.new(random_symetric_key, AES.MODE_CBC, iv=random_iv)
+    combined_encrypted = alice_aes_encrypter.encrypt(pad(combined_data, AES.block_size))
+
+    # iv. Alicja szyfruje klucz symetryczny kluczem publicznym Boba
+    alice_bobs_rsa_encrypter = PKCS1_OAEP.new(RSA.import_key(bob_keys.publickey().export_key()))
+    encrypted_symetric_key_for_bob = alice_bobs_rsa_encrypter.encrypt(random_symetric_key)
+    
+    # Alicja musi też przekazać IV (może być niezaszyfrowany)
+    # W praktyce IV jest zwykle przesyłany razem z ciphertextem
+
+    # v. Bob deszyfruje swoim kluczem prywatnym zaszyfrowany klucz symetryczny
+    bobs_rsa_decrypter = PKCS1_OAEP.new(bob_keys)
+    bobs_decrypted_symetric_key = bobs_rsa_decrypter.decrypt(encrypted_symetric_key_for_bob)
+
+    # vi. Bob deszyfruje kluczem symetrycznym wiadomość/podpis
+    bobs_aes_decrypter = AES.new(bobs_decrypted_symetric_key, AES.MODE_CBC, iv=random_iv)
+    combined_decrypted = bobs_aes_decrypter.decrypt(combined_encrypted)
+    combined_decrypted = unpad(combined_decrypted, AES.block_size)
+    
+    # Rozdzielamy wiadomość i podpis
+    parts = combined_decrypted.split(b"|SEPARATOR|")
+    alice_message_decrypted = parts[0]
+    alice_sign_decrypted = parts[1]
+    
+    # vii. Bob sprawdza podpis
+    bobs_alices_rsa_verifier = pss.new(RSA.import_key(alice_keys.publickey().export_key()))
+    try:
+        bobs_alices_rsa_verifier.verify(SHA256.new(alice_message_decrypted), alice_sign_decrypted)
+        print("Podpis jest poprawny")
+        print("Wiadomość od Alice do Boba:")
+        print(alice_message_decrypted.decode())
+    except (ValueError, TypeError):
+        print("Podpis nie jest poprawny")
+
 if __name__ == "__main__":
     # zad1()
-    zad2()
+    # zad2()
+    # zad3_szyfr_asym()
+    # zad3_podpis()
+    zad3()
