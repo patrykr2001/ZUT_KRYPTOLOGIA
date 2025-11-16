@@ -256,8 +256,8 @@ def main():
     
     
     # c) Przykładowa liczba 4096-bitowa
-    print("\n\nc) Przykładowa liczba składająca się z 4096 bitów:")
-    print("-" * 60)
+    # print("\n\nc) Przykładowa liczba składająca się z 4096 bitów:")
+    # print("-" * 60)
     
     # Wygeneruj liczbę pierwszą 4096-bitową
     # example_4096 = generate_prime(4096)
@@ -340,10 +340,10 @@ def main():
     except:
         print(f"   (nie da się zinterpretować jako UTF-8, to tylko losowe bajty)")
     
-    print(f"\n5. Wniosek:")
-    print(f"   Plain RSA jest podatny na no-message attack.")
-    print(f"   Atakujący może wygenerować 'poprawne' pary (podpis, wiadomość)")
-    print(f"   bez znajomości klucza prywatnego, choć nie kontroluje treści wiadomości.")
+    # print(f"\n5. Wniosek:")
+    # print(f"   Plain RSA jest podatny na no-message attack.")
+    # print(f"   Atakujący może wygenerować 'poprawne' pary (podpis, wiadomość)")
+    # print(f"   bez znajomości klucza prywatnego, choć nie kontroluje treści wiadomości.")
     
     
     # b) Eksperyment 2 - Multiplicative property attack
@@ -402,25 +402,25 @@ def main():
         print(f"    NIE - coś poszło nie tak")
     
     # Dodatkowa weryfikacja matematyczna
-    print(f"\n6. Weryfikacja matematyczna:")
-    print(f"   s^e mod n = {pow(s_forged, e, n)}")
-    print(f"   m        = {m_target}")
-    print(f"   Równe? {pow(s_forged, e, n) == m_target}")
+    # print(f"\n6. Weryfikacja matematyczna:")
+    # print(f"   s^e mod n = {pow(s_forged, e, n)}")
+    # print(f"   m        = {m_target}")
+    # print(f"   Równe? {pow(s_forged, e, n) == m_target}")
     
-    # Sprawdź też własność multiplikatywną bezpośrednio
-    print(f"\n7. Sprawdzenie własności multiplikatywnej:")
-    print(f"   s1^e mod n = {pow(s1, e, n)} (powinno być {m1})")
-    print(f"   s2^e mod n = {pow(s2, e, n)} (powinno być {m2})")
-    print(f"   (s1*s2)^e mod n = {pow((s1 * s2) % n, e, n)} (powinno być {m_target})")
-    print(f"   (s1^e * s2^e) mod n = {(pow(s1, e, n) * pow(s2, e, n)) % n} (powinno być {m_target})")
+    # # Sprawdź też własność multiplikatywną bezpośrednio
+    # print(f"\n7. Sprawdzenie własności multiplikatywnej:")
+    # print(f"   s1^e mod n = {pow(s1, e, n)} (powinno być {m1})")
+    # print(f"   s2^e mod n = {pow(s2, e, n)} (powinno być {m2})")
+    # print(f"   (s1*s2)^e mod n = {pow((s1 * s2) % n, e, n)} (powinno być {m_target})")
+    # print(f"   (s1^e * s2^e) mod n = {(pow(s1, e, n) * pow(s2, e, n)) % n} (powinno być {m_target})")
     
-    print(f"\n8. Wniosek:")
-    print(f"   Plain RSA ma własność multiplikatywną:")
-    print(f"   sign(m1*m2) = sign(m1) * sign(m2) mod n")
-    print(f"   To pozwala atakującemu sfałszować podpis dla m = m1*m2,")
-    print(f"   jeśli zna podpisy dla m1 i m2.")
-    print(f"   Dlatego w praktyce używa się padding (np. PSS), który")
-    print(f"   niszczy tę własność multiplikatywną")
+    # print(f"\n8. Wniosek:")
+    # print(f"   Plain RSA ma własność multiplikatywną:")
+    # print(f"   sign(m1*m2) = sign(m1) * sign(m2) mod n")
+    # print(f"   To pozwala atakującemu sfałszować podpis dla m = m1*m2,")
+    # print(f"   jeśli zna podpisy dla m1 i m2.")
+    # print(f"   Dlatego w praktyce używa się padding (np. PSS), który")
+    # print(f"   niszczy tę własność multiplikatywną")
     
     
     # c) Eksperyment 3 - Atak na szyfrowanie RSA z małym wykładnikiem
@@ -542,15 +542,15 @@ def main():
             print(f"   Nie można zdekodować jako tekst")
             print(f"   Surowe bajty: {m_bytes_decrypted}")
     
-    print()
-    print(f"5. Wniosek:")
-    print(f"   Gdy e jest małe (e=3) i wiadomość m jest wystarczająco mała,")
-    print(f"   że m^e < N, atakujący może łatwo odszyfrować wiadomość")
-    print(f"   obliczając po prostu e-ty pierwiastek z szyfrogramu.")
-    print(f"   Dlatego w praktyce:")
-    print(f"   - Używa się większego e (np. e=65537)")
-    print(f"   - Zawsze stosuje się padding (OAEP), który zwiększa rozmiar")
-    print(f"     wiadomości, zapewniając że m^e > N")
+    # print()
+    # print(f"5. Wniosek:")
+    # print(f"   Gdy e jest małe (e=3) i wiadomość m jest wystarczająco mała,")
+    # print(f"   że m^e < N, atakujący może łatwo odszyfrować wiadomość")
+    # print(f"   obliczając po prostu e-ty pierwiastek z szyfrogramu.")
+    # print(f"   Dlatego w praktyce:")
+    # print(f"   - Używa się większego e (np. e=65537)")
+    # print(f"   - Zawsze stosuje się padding (OAEP), który zwiększa rozmiar")
+    # print(f"     wiadomości, zapewniając że m^e > N")
 
 
 
