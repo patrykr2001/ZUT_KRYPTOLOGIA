@@ -1,6 +1,7 @@
 import random
 from math import gcd, lcm
 import time
+import hashlib
 
 
 def is_prime(n, k=5):
@@ -129,6 +130,87 @@ def verify_signature(message_bytes, signature, public_key):
     
     # Sprawdź czy m == m'
     return m == m_prime
+
+
+def hash_message(message, n):
+    """
+    Funkcja skrótu dla RSA-FDH (Full Domain Hash).
+    Haszuje wiadomość do wartości w zakresie [0, n-1].
+    
+    Używamy SHA-256 i rozszerzamy wynik do odpowiedniej długości.
+    """
+    # Oblicz ile bajtów potrzebujemy dla n
+    n_bytes = (n.bit_length() + 7) // 8
+    
+    # Użyj SHA-256 jako bazy
+    hash_obj = hashlib.sha256()
+    
+    if isinstance(message, str):
+        hash_obj.update(message.encode('utf-8'))
+    else:
+        hash_obj.update(message)
+    
+    # Dla małych modułów (testowych) po prostu obetnij hash
+    # W prawdziwym RSA-FDH używa się bardziej skomplikowanych metod (np. MGF1)
+    hash_digest = hash_obj.digest()
+    
+    # Rozszerz hash jeśli potrzeba (w uproszczeniu - iteracyjne hashowanie)
+    extended_hash = hash_digest
+    counter = 0
+    while len(extended_hash) < n_bytes:
+        hash_obj = hashlib.sha256()
+        hash_obj.update(hash_digest + counter.to_bytes(4, 'big'))
+        extended_hash += hash_obj.digest()
+        counter += 1
+    
+    # Przetnij do odpowiedniej długości
+    extended_hash = extended_hash[:n_bytes]
+    
+    # Konwertuj na liczbę
+    h = int.from_bytes(extended_hash, byteorder='big')
+    
+    # Upewnij się że h < n
+    h = h % n
+    
+    return h
+
+
+def sign_message_fdh(message, private_key):
+    """
+    Podpisz wiadomość używając RSA-FDH (Full Domain Hash).
+    Najpierw hashujemy wiadomość, potem podpisujemy hash.
+    """
+    d, n = private_key
+    
+    # Konwertuj wiadomość na bajty jeśli to string
+    if isinstance(message, str):
+        message_bytes = message.encode('utf-8')
+    else:
+        message_bytes = message
+    
+    # Zahashuj wiadomość do wartości w zakresie [0, n-1]
+    h = hash_message(message_bytes, n)
+    
+    # Podpis: s = h^d mod n
+    signature = pow(h, d, n)
+    
+    return signature, message_bytes
+
+
+def verify_signature_fdh(message_bytes, signature, public_key):
+    """
+    Weryfikuj podpis RSA-FDH używając klucza publicznego.
+    """
+    e, n = public_key
+    
+    # Zahashuj wiadomość
+    h = hash_message(message_bytes, n)
+    
+    # Weryfikacja: h' = s^e mod n
+    h_prime = pow(signature, e, n)
+    
+    # Sprawdź czy h == h'
+    return h == h_prime
 
 
 def main():
@@ -551,8 +633,123 @@ def main():
     # print(f"   - Używa się większego e (np. e=65537)")
     # print(f"   - Zawsze stosuje się padding (OAEP), który zwiększa rozmiar")
     # print(f"     wiadomości, zapewniając że m^e > N")
-
-
+    
+    
+    # ZADANIE 4
+    print("\n" + "="*80)
+    print("ZADANIE 4 - RSA-FDH (Full Domain Hash)")
+    print("="*80)
+    
+    print("\nRSA-FDH to ulepszony schemat Plain RSA, który:")
+    print("- Podpisuje HASH wiadomości, a nie samą wiadomość")
+    print("- Używa funkcji skrótu (np. SHA-256) przed operacją RSA")
+    print("- Eliminuje wiele ataków na Plain RSA\n")
+    
+    # Wiadomość testowa
+    test_msg = "To jest testowa wiadomosc dla RSA-FDH"
+    print(f"Wiadomość testowa:")
+    print(f"  '{test_msg}'")
+    print()
+    
+    # Generuj nową parę kluczy dla testów
+    print("Generowanie kluczy RSA 2048-bitowych...")
+    pub_fdh, priv_fdh, _, _, _ = generate_rsa_keys(2048)
+    e_fdh, n_fdh = pub_fdh
+    d_fdh, _ = priv_fdh
+    print(f"  e = {e_fdh}")
+    print(f"  n = {n_fdh}")
+    print()
+    
+    # Test Plain RSA vs RSA-FDH
+    print("-" * 80)
+    print("Porównanie Plain RSA vs RSA-FDH")
+    print("-" * 80)
+    
+    # Plain RSA
+    print("\n1. Plain RSA:")
+    sig_plain, msg_bytes = sign_message(test_msg, priv_fdh)
+    is_valid_plain = verify_signature(msg_bytes, sig_plain, pub_fdh)
+    print(f"   Podpis (Plain):  {sig_plain}")
+    print(f"   Weryfikacja:     {'POPRAWNA' if is_valid_plain else 'NIEPOPRAWNA'}")
+    
+    # RSA-FDH
+    print("\n2. RSA-FDH:")
+    sig_fdh, msg_bytes_fdh = sign_message_fdh(test_msg, priv_fdh)
+    is_valid_fdh = verify_signature_fdh(msg_bytes_fdh, sig_fdh, pub_fdh)
+    
+    # Pokaż hash
+    h = hash_message(msg_bytes_fdh, n_fdh)
+    print(f"   Hash wiadomości: {h}")
+    print(f"   Podpis (FDH):    {sig_fdh}")
+    print(f"   Weryfikacja:     {'POPRAWNA' if is_valid_fdh else 'NIEPOPRAWNA'}")
+    
+    
+    # a) Analiza czasu wykonania
+    print("\n" + "-" * 80)
+    print("a) Analiza czasu wykonania - Plain RSA vs RSA-FDH")
+    print("-" * 80)
+    
+    # Przygotuj wiadomości różnej długości
+    messages = {
+        "Krótka (10B)": "a" * 10,
+        "Średnia (100B)": "a" * 100,
+        "Długa (200B)": "a" * 200,
+    }
+    
+    num_iterations = 10
+    
+    for msg_name, msg in messages.items():
+        print(f"\n{msg_name}:")
+        
+        # Plain RSA - pomiar
+        times_plain_sign = []
+        times_plain_verify = []
+        
+        for _ in range(num_iterations):
+            # Podpisywanie
+            start = time.time()
+            sig_p, msg_b = sign_message(msg, priv_fdh)
+            times_plain_sign.append(time.time() - start)
+            
+            # Weryfikacja
+            start = time.time()
+            verify_signature(msg_b, sig_p, pub_fdh)
+            times_plain_verify.append(time.time() - start)
+        
+        avg_plain_sign = sum(times_plain_sign) / num_iterations
+        avg_plain_verify = sum(times_plain_verify) / num_iterations
+        
+        # RSA-FDH - pomiar
+        times_fdh_sign = []
+        times_fdh_verify = []
+        
+        for _ in range(num_iterations):
+            # Podpisywanie
+            start = time.time()
+            sig_f, msg_b_f = sign_message_fdh(msg, priv_fdh)
+            times_fdh_sign.append(time.time() - start)
+            
+            # Weryfikacja
+            start = time.time()
+            verify_signature_fdh(msg_b_f, sig_f, pub_fdh)
+            times_fdh_verify.append(time.time() - start)
+        
+        avg_fdh_sign = sum(times_fdh_sign) / num_iterations
+        avg_fdh_verify = sum(times_fdh_verify) / num_iterations
+        
+        print(f"  Plain RSA:")
+        print(f"    Podpisywanie: {avg_plain_sign*1000:.4f} ms")
+        print(f"    Weryfikacja:  {avg_plain_verify*1000:.4f} ms")
+        
+        print(f"  RSA-FDH:")
+        print(f"    Podpisywanie: {avg_fdh_sign*1000:.4f} ms")
+        print(f"    Weryfikacja:  {avg_fdh_verify*1000:.4f} ms")
+        
+        print(f"  Różnica:")
+        print(f"    Podpisywanie: {((avg_fdh_sign - avg_plain_sign) / avg_plain_sign * 100):+.2f}%")
+        print(f"    Weryfikacja:  {((avg_fdh_verify - avg_plain_verify) / avg_plain_verify * 100):+.2f}%")
+    
 
 if __name__ == "__main__":
     main()
+
