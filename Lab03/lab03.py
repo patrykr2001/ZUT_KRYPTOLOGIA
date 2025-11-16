@@ -421,6 +421,136 @@ def main():
     print(f"   jeśli zna podpisy dla m1 i m2.")
     print(f"   Dlatego w praktyce używa się padding (np. PSS), który")
     print(f"   niszczy tę własność multiplikatywną")
+    
+    
+    # c) Eksperyment 3 - Atak na szyfrowanie RSA z małym wykładnikiem
+    print("\n" + "-"*80)
+    print("c) Eksperyment 3 - Atak na szyfrowanie RSA z małym wykładnikiem e=3")
+    print("-"*80)
+    print("\nGdy wykładnik publiczny e jest mały (np. e=3) i wiadomość m jest")
+    print("wystarczająco mała, że m^e < N, wtedy m^e mod N = m^e (bez modulo).")
+    print("Atakujący może po prostu obliczyć pierwiastek e-tego stopnia z szyfrogramu!\n")
+    
+    # Dane z zadania
+    ciphertext = 2829246759667430901779973875
+    e_attack = 3
+    N_attack = int(
+        "7486374846663627918089811394557316880016731434900733973466"
+        "4557033677222985045895878321130196223760783214379338040678"
+        "2339080107477732640032376205901411740283301540121395970682"
+        "3612154294544242607436701783834990586691512046997836198600"
+        "2240362282392181726265023378796284600697013635003150020012"
+        "763665368297013349"
+    )
+    
+    print(f"Dane:")
+    print(f"  Szyfrogram c = {ciphertext}")
+    print(f"  Wykładnik e = {e_attack}")
+    print(f"  Moduł N = {N_attack}")
+    print()
+    
+    # Sprawdź czy c^(1/3) < N (czyli czy m^3 < N, co oznacza że nie było redukcji modulo)
+    print(f"1. Sprawdzenie czy m^3 < N (nie było redukcji modulo):")
+    
+    # Oblicz przybliżony pierwiastek sześcienny
+    def nth_root(x, n):
+        """Oblicz pierwiastek n-tego stopnia z x (całkowity)"""
+        # Używamy metody bisekcji dla dużych liczb
+        if x == 0:
+            return 0
+        if x == 1:
+            return 1
+        
+        # Początkowe oszacowanie
+        low = 0
+        high = x
+        
+        # Optymalizacja dla dużych liczb
+        if x > 2**64:
+            # Lepsze początkowe oszacowanie
+            high = 2 ** ((x.bit_length() + n - 1) // n + 1)
+        
+        while low < high:
+            mid = (low + high) // 2
+            mid_pow = mid ** n
+            
+            if mid_pow == x:
+                return mid
+            elif mid_pow < x:
+                low = mid + 1
+            else:
+                high = mid
+        
+        # Sprawdź czy low jest dokładnym pierwiastkiem
+        if low ** n == x:
+            return low
+        else:
+            return low - 1  # Zwróć największą liczbę całkowitą <= x^(1/n)
+    
+    # Oblicz m = c^(1/3)
+    print(f"   Obliczanie m = c^(1/3)...")
+    m_decrypted = nth_root(ciphertext, e_attack)
+    
+    print(f"   m = {m_decrypted}")
+    print()
+    
+    # Weryfikacja - czy m^3 = c?
+    print(f"2. Weryfikacja: m^3 = c?")
+    m_cubed = m_decrypted ** 3
+    print(f"   m^3 = {m_cubed}")
+    print(f"   c   = {ciphertext}")
+    
+    if m_cubed == ciphertext:
+        print(f"    TAK m^3 = c, deszyfrowanie poprawne")
+    else:
+        print(f"    Nie zgadza się, spróbujmy m+1...")
+        m_decrypted += 1
+        m_cubed = m_decrypted ** 3
+        if m_cubed == ciphertext:
+            print(f"    TAK (m+1)^3 = c")
+        else:
+            print(f"    Nadal się nie zgadza")
+    print()
+    
+    # Zamień liczbę dziesiętną na szesnastkową
+    print(f"3. Konwersja m na format szesnastkowy:")
+    m_hex = hex(m_decrypted)[2:]  # Usuń prefix '0x'
+    print(f"   m (hex) = {m_hex}")
+    print()
+    
+    # Konwersja na bajty i odczyt ASCII
+    print(f"4. Dekodowanie jako ASCII:")
+    
+    # Upewnij się, że hex ma parzystą liczbę znaków
+    if len(m_hex) % 2 == 1:
+        m_hex = '0' + m_hex
+    
+    # Konwertuj hex na bajty
+    m_bytes_decrypted = bytes.fromhex(m_hex)
+    
+    print(f"   Bajty (hex): {m_bytes_decrypted.hex()}")
+    
+    # Dekoduj jako ASCII/UTF-8
+    try:
+        m_text = m_bytes_decrypted.decode('ascii')
+        print(f"   Wiadomość:   '{m_text}'")
+    except:
+        try:
+            m_text = m_bytes_decrypted.decode('utf-8')
+            print(f"   Wiadomość (UTF-8): '{m_text}'")
+        except:
+            print(f"   Nie można zdekodować jako tekst")
+            print(f"   Surowe bajty: {m_bytes_decrypted}")
+    
+    print()
+    print(f"5. Wniosek:")
+    print(f"   Gdy e jest małe (e=3) i wiadomość m jest wystarczająco mała,")
+    print(f"   że m^e < N, atakujący może łatwo odszyfrować wiadomość")
+    print(f"   obliczając po prostu e-ty pierwiastek z szyfrogramu.")
+    print(f"   Dlatego w praktyce:")
+    print(f"   - Używa się większego e (np. e=65537)")
+    print(f"   - Zawsze stosuje się padding (OAEP), który zwiększa rozmiar")
+    print(f"     wiadomości, zapewniając że m^e > N")
 
 
 
