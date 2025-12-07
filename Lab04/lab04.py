@@ -415,7 +415,6 @@ def main():
         print("=" * 80)
         print("1. Demonstracja podstawowego LFSR (Zadanie 1)")
         print("2. Demonstracja generatorów strumieni kluczy (Zadanie 2)")
-        print("3. Demonstracja automatycznej inicjalizacji LFSR")
         print("4. Tryb interaktywny - LFSR")
         print("5. Tryb interaktywny - Generator Geffe'go")
         print("6. Tryb interaktywny - Generator Stop-and-Go")
@@ -429,8 +428,6 @@ def main():
                 zad1()
             elif choice == '2':
                 zad2()
-            elif choice == '3':
-                demo_auto_lfsr()
             elif choice == '4':
                 interactive_lfsr()
             elif choice == '5':
