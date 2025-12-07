@@ -153,14 +153,22 @@ def interactive_lfsr():
             print("Błąd: Długość musi być dodatnia")
             return
         
-        # Pozycje tapów
-        taps_str = input(f"Podaj pozycje tapów (1-{length}), oddzielone przecinkami: ")
-        taps = parse_taps(taps_str)
+        # Pytamy o tryb inicjalizacji
+        auto_init = input("\nUżyć automatycznej inicjalizacji tapów i seeda? (t/n): ").strip().lower()
         
-        # Stan początkowy
-        max_value = (1 << length) - 1
-        seed_str = input(f"Podaj stan początkowy (binarnie lub dziesiętnie, max {max_value}): ")
-        seed = parse_seed(seed_str, length)
+        if auto_init in ['t', 'tak', 'y', 'yes']:
+            # Automatyczna inicjalizacja
+            taps = None
+            seed = None
+            print("Używam automatycznej inicjalizacji...")
+        else:
+            # Ręczna inicjalizacja
+            taps_str = input(f"Podaj pozycje tapów (1-{length}), oddzielone przecinkami: ")
+            taps = parse_taps(taps_str)
+            
+            max_value = (1 << length) - 1
+            seed_str = input(f"Podaj stan początkowy (binarnie lub dziesiętnie, max {max_value}): ")
+            seed = parse_seed(seed_str, length)
         
         # Liczba bitów do wygenerowania
         num_bits = int(input("Podaj liczbę bitów do wygenerowania: "))
@@ -199,23 +207,40 @@ def interactive_geffe():
     print("=" * 80)
     
     try:
-        # Konfiguracja LFSR1
-        print("\n--- Konfiguracja LFSR1 (selektor) ---")
-        len1 = int(input("Długość: "))
-        taps1 = parse_taps(input(f"Pozycje tapów (1-{len1}): "))
-        seed1 = parse_seed(input("Stan początkowy: "), len1)
+        # Pytamy o tryb inicjalizacji
+        auto_init = input("\nUżyć automatycznej inicjalizacji wszystkich LFSR? (t/n): ").strip().lower()
         
-        # Konfiguracja LFSR2
-        print("\n--- Konfiguracja LFSR2 ---")
-        len2 = int(input("Długość: "))
-        taps2 = parse_taps(input(f"Pozycje tapów (1-{len2}): "))
-        seed2 = parse_seed(input("Stan początkowy: "), len2)
-        
-        # Konfiguracja LFSR3
-        print("\n--- Konfiguracja LFSR3 ---")
-        len3 = int(input("Długość: "))
-        taps3 = parse_taps(input(f"Pozycje tapów (1-{len3}): "))
-        seed3 = parse_seed(input("Stan początkowy: "), len3)
+        if auto_init in ['t', 'tak', 'y', 'yes']:
+            # Automatyczna inicjalizacja - pytamy tylko o długości
+            print("\n--- Konfiguracja LFSR1 (selektor) ---")
+            len1 = int(input("Długość: "))
+            taps1, seed1 = None, None
+            
+            print("\n--- Konfiguracja LFSR2 ---")
+            len2 = int(input("Długość: "))
+            taps2, seed2 = None, None
+            
+            print("\n--- Konfiguracja LFSR3 ---")
+            len3 = int(input("Długość: "))
+            taps3, seed3 = None, None
+            
+            print("\nUżywam automatycznej inicjalizacji tapów i seedów...")
+        else:
+            # Ręczna inicjalizacja
+            print("\n--- Konfiguracja LFSR1 (selektor) ---")
+            len1 = int(input("Długość: "))
+            taps1 = parse_taps(input(f"Pozycje tapów (1-{len1}): "))
+            seed1 = parse_seed(input("Stan początkowy: "), len1)
+            
+            print("\n--- Konfiguracja LFSR2 ---")
+            len2 = int(input("Długość: "))
+            taps2 = parse_taps(input(f"Pozycje tapów (1-{len2}): "))
+            seed2 = parse_seed(input("Stan początkowy: "), len2)
+            
+            print("\n--- Konfiguracja LFSR3 ---")
+            len3 = int(input("Długość: "))
+            taps3 = parse_taps(input(f"Pozycje tapów (1-{len3}): "))
+            seed3 = parse_seed(input("Stan początkowy: "), len3)
         
         # Liczba bitów
         num_bits = int(input("\nLiczba bitów do wygenerowania: "))
@@ -226,9 +251,9 @@ def interactive_geffe():
         lfsr3 = LFSR(len3, taps3, seed3)
         
         print(f"\n--- Podsumowanie konfiguracji ---")
-        print(f"LFSR1: length={len1}, taps={taps1}, seed={lfsr1.get_state_binary()}")
-        print(f"LFSR2: length={len2}, taps={taps2}, seed={lfsr2.get_state_binary()}")
-        print(f"LFSR3: length={len3}, taps={taps3}, seed={lfsr3.get_state_binary()}")
+        print(f"LFSR1: length={len1}, taps={lfsr1.taps}, seed={lfsr1.get_state_binary()}")
+        print(f"LFSR2: length={len2}, taps={lfsr2.taps}, seed={lfsr2.get_state_binary()}")
+        print(f"LFSR3: length={len3}, taps={lfsr3.taps}, seed={lfsr3.get_state_binary()}")
         
         # Generowanie
         print(f"\nGenerowanie strumienia kluczy...")
@@ -253,23 +278,40 @@ def interactive_stop_and_go():
     print("=" * 80)
     
     try:
-        # Konfiguracja LFSR Control
-        print("\n--- Konfiguracja LFSR Control ---")
-        len_ctrl = int(input("Długość: "))
-        taps_ctrl = parse_taps(input(f"Pozycje tapów (1-{len_ctrl}): "))
-        seed_ctrl = parse_seed(input("Stan początkowy: "), len_ctrl)
+        # Pytamy o tryb inicjalizacji
+        auto_init = input("\nUżyć automatycznej inicjalizacji wszystkich LFSR? (t/n): ").strip().lower()
         
-        # Konfiguracja LFSR R2
-        print("\n--- Konfiguracja LFSR R2 ---")
-        len_r2 = int(input("Długość: "))
-        taps_r2 = parse_taps(input(f"Pozycje tapów (1-{len_r2}): "))
-        seed_r2 = parse_seed(input("Stan początkowy: "), len_r2)
-        
-        # Konfiguracja LFSR R3
-        print("\n--- Konfiguracja LFSR R3 ---")
-        len_r3 = int(input("Długość: "))
-        taps_r3 = parse_taps(input(f"Pozycje tapów (1-{len_r3}): "))
-        seed_r3 = parse_seed(input("Stan początkowy: "), len_r3)
+        if auto_init in ['t', 'tak', 'y', 'yes']:
+            # Automatyczna inicjalizacja - pytamy tylko o długości
+            print("\n--- Konfiguracja LFSR Control ---")
+            len_ctrl = int(input("Długość: "))
+            taps_ctrl, seed_ctrl = None, None
+            
+            print("\n--- Konfiguracja LFSR R2 ---")
+            len_r2 = int(input("Długość: "))
+            taps_r2, seed_r2 = None, None
+            
+            print("\n--- Konfiguracja LFSR R3 ---")
+            len_r3 = int(input("Długość: "))
+            taps_r3, seed_r3 = None, None
+            
+            print("\nUżywam automatycznej inicjalizacji tapów i seedów...")
+        else:
+            # Ręczna inicjalizacja
+            print("\n--- Konfiguracja LFSR Control ---")
+            len_ctrl = int(input("Długość: "))
+            taps_ctrl = parse_taps(input(f"Pozycje tapów (1-{len_ctrl}): "))
+            seed_ctrl = parse_seed(input("Stan początkowy: "), len_ctrl)
+            
+            print("\n--- Konfiguracja LFSR R2 ---")
+            len_r2 = int(input("Długość: "))
+            taps_r2 = parse_taps(input(f"Pozycje tapów (1-{len_r2}): "))
+            seed_r2 = parse_seed(input("Stan początkowy: "), len_r2)
+            
+            print("\n--- Konfiguracja LFSR R3 ---")
+            len_r3 = int(input("Długość: "))
+            taps_r3 = parse_taps(input(f"Pozycje tapów (1-{len_r3}): "))
+            seed_r3 = parse_seed(input("Stan początkowy: "), len_r3)
         
         # Liczba bitów
         num_bits = int(input("\nLiczba bitów do wygenerowania: "))
@@ -280,9 +322,9 @@ def interactive_stop_and_go():
         lfsr_r3 = LFSR(len_r3, taps_r3, seed_r3)
         
         print(f"\n--- Podsumowanie konfiguracji ---")
-        print(f"LFSR Control: length={len_ctrl}, taps={taps_ctrl}, seed={lfsr_ctrl.get_state_binary()}")
-        print(f"LFSR R2:      length={len_r2}, taps={taps_r2}, seed={lfsr_r2.get_state_binary()}")
-        print(f"LFSR R3:      length={len_r3}, taps={taps_r3}, seed={lfsr_r3.get_state_binary()}")
+        print(f"LFSR Control: length={len_ctrl}, taps={lfsr_ctrl.taps}, seed={lfsr_ctrl.get_state_binary()}")
+        print(f"LFSR R2:      length={len_r2}, taps={lfsr_r2.taps}, seed={lfsr_r2.get_state_binary()}")
+        print(f"LFSR R3:      length={len_r3}, taps={lfsr_r3.taps}, seed={lfsr_r3.get_state_binary()}")
         
         # Generowanie
         print(f"\nGenerowanie strumienia kluczy...")
@@ -307,17 +349,31 @@ def interactive_shrinking():
     print("=" * 80)
     
     try:
-        # Konfiguracja LFSR A
-        print("\n--- Konfiguracja LFSR A (dane) ---")
-        len_a = int(input("Długość: "))
-        taps_a = parse_taps(input(f"Pozycje tapów (1-{len_a}): "))
-        seed_a = parse_seed(input("Stan początkowy: "), len_a)
+        # Pytamy o tryb inicjalizacji
+        auto_init = input("\nUżyć automatycznej inicjalizacji wszystkich LFSR? (t/n): ").strip().lower()
         
-        # Konfiguracja LFSR S
-        print("\n--- Konfiguracja LFSR S (selekcja) ---")
-        len_s = int(input("Długość: "))
-        taps_s = parse_taps(input(f"Pozycje tapów (1-{len_s}): "))
-        seed_s = parse_seed(input("Stan początkowy: "), len_s)
+        if auto_init in ['t', 'tak', 'y', 'yes']:
+            # Automatyczna inicjalizacja - pytamy tylko o długości
+            print("\n--- Konfiguracja LFSR A (dane) ---")
+            len_a = int(input("Długość: "))
+            taps_a, seed_a = None, None
+            
+            print("\n--- Konfiguracja LFSR S (selekcja) ---")
+            len_s = int(input("Długość: "))
+            taps_s, seed_s = None, None
+            
+            print("\nUżywam automatycznej inicjalizacji tapów i seedów...")
+        else:
+            # Ręczna inicjalizacja
+            print("\n--- Konfiguracja LFSR A (dane) ---")
+            len_a = int(input("Długość: "))
+            taps_a = parse_taps(input(f"Pozycje tapów (1-{len_a}): "))
+            seed_a = parse_seed(input("Stan początkowy: "), len_a)
+            
+            print("\n--- Konfiguracja LFSR S (selekcja) ---")
+            len_s = int(input("Długość: "))
+            taps_s = parse_taps(input(f"Pozycje tapów (1-{len_s}): "))
+            seed_s = parse_seed(input("Stan początkowy: "), len_s)
         
         # Liczba bitów
         num_bits = int(input("\nLiczba bitów do wygenerowania: "))
@@ -327,8 +383,8 @@ def interactive_shrinking():
         lfsr_s = LFSR(len_s, taps_s, seed_s)
         
         print(f"\n--- Podsumowanie konfiguracji ---")
-        print(f"LFSR A (dane):     length={len_a}, taps={taps_a}, seed={lfsr_a.get_state_binary()}")
-        print(f"LFSR S (selekcja): length={len_s}, taps={taps_s}, seed={lfsr_s.get_state_binary()}")
+        print(f"LFSR A (dane):     length={len_a}, taps={lfsr_a.taps}, seed={lfsr_a.get_state_binary()}")
+        print(f"LFSR S (selekcja): length={len_s}, taps={lfsr_s.taps}, seed={lfsr_s.get_state_binary()}")
         
         # Generowanie
         print(f"\nGenerowanie strumienia kluczy...")
@@ -359,10 +415,11 @@ def main():
         print("=" * 80)
         print("1. Demonstracja podstawowego LFSR (Zadanie 1)")
         print("2. Demonstracja generatorów strumieni kluczy (Zadanie 2)")
-        print("3. Tryb interaktywny - LFSR")
-        print("4. Tryb interaktywny - Generator Geffe'go")
-        print("5. Tryb interaktywny - Generator Stop-and-Go")
-        print("6. Tryb interaktywny - Shrinking Generator")
+        print("3. Demonstracja automatycznej inicjalizacji LFSR")
+        print("4. Tryb interaktywny - LFSR")
+        print("5. Tryb interaktywny - Generator Geffe'go")
+        print("6. Tryb interaktywny - Generator Stop-and-Go")
+        print("7. Tryb interaktywny - Shrinking Generator")
         print("0. Wyjście")
         
         try:
@@ -373,12 +430,14 @@ def main():
             elif choice == '2':
                 zad2()
             elif choice == '3':
-                interactive_lfsr()
+                demo_auto_lfsr()
             elif choice == '4':
-                interactive_geffe()
+                interactive_lfsr()
             elif choice == '5':
-                interactive_stop_and_go()
+                interactive_geffe()
             elif choice == '6':
+                interactive_stop_and_go()
+            elif choice == '7':
                 interactive_shrinking()
             elif choice == '0':
                 print("\nDo widzenia!")
