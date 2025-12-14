@@ -28,3 +28,7 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+eccelerate-6.02_eval/
+eccelerate-6.02_eval_addon/
+iaik_jce_full-5.62-eval/
