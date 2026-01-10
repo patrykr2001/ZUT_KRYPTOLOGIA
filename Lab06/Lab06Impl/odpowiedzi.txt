@@ -1,0 +1,6 @@
+1. Używana jest krzywa secp521r1 o rozmiarze 521 bitów.
+2. Wartość k jest wybierana losowo za pomocą generatora liczb pseudolosowych.
+   Generowana jest jako liczba o wielkości 520 bitów.
+3. Pominięte kroki:
+   - Brak weryfikacji czy QA jest prawidłowym punktem na krzywej.
+   - Brak sprawdzenia zakresu wartości r i s przy weryfikacji.
