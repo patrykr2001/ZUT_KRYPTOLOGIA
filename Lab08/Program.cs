@@ -152,11 +152,28 @@ class LamportSignature
     }
 }
 
+/// <summary>
+/// Klasa przechowująca wyniki pomiarów dla jednego algorytmu
+/// </summary>
+class BenchmarkResult
+{
+    public string AlgorithmName { get; set; } = string.Empty;
+    public bool IsValidSignature { get; set; }
+    public bool IsInvalidRejected { get; set; }
+    public double KeyGenTime { get; set; }
+    public double SignTime { get; set; }
+    public double VerifyTime { get; set; }
+    public int PrivateKeySize { get; set; }
+    public int PublicKeySize { get; set; }
+    public int SignatureSize { get; set; }
+}
+
 class Program
 {
     static void Main(string[] args)
     {
         Console.WriteLine("  PODPIS JEDNORAZOWY LAMPORTA (Lamport One-Time Signature)");
+        Console.WriteLine();
 
         // Algorytmy do przetestowania
         var algorithms = new[]
@@ -166,41 +183,25 @@ class Program
             HashAlgorithmName.SHA512
         };
 
+        var results = new List<BenchmarkResult>();
+        string message = "Kryptografia post-kwantowa 2026";
+        int iterations = 100;
+
+        // Zbieranie wyników dla wszystkich algorytmów
         foreach (var algorithm in algorithms)
         {
-            Console.WriteLine($"  Algorytm: {algorithm.Name}");
+            Console.WriteLine($"Przetwarzanie {algorithm.Name}...");
 
             var lamport = new LamportSignature(algorithm);
+            var result = new BenchmarkResult { AlgorithmName = algorithm.Name ?? "Unknown" };
 
             // a) Demonstracja działania
-            Console.WriteLine("a) DEMONSTRACJA DZIAŁANIA:");
-            Console.WriteLine(new string('-', 65));
-
-            string message = "Kryptografia post-kwantowa 2026";
-            Console.WriteLine($"Wiadomość: \"{message}\"\n");
-
-            Console.Write("Generowanie kluczy... ");
             var (privateKey, publicKey) = lamport.GenerateKeys();
-            Console.WriteLine("Gotowe");
-
-            Console.Write("Podpisywanie wiadomości... ");
             var signature = lamport.Sign(message, privateKey);
-            Console.WriteLine("Gotowe");
-
-            Console.Write("Weryfikacja podpisu... ");
-            bool isValid = lamport.Verify(message, signature, publicKey);
-            Console.WriteLine($"{(isValid ? "POPRAWNY" : "NIEPOPRAWNY")}");
-
-            // Test z niepoprawną wiadomością
-            Console.Write("Weryfikacja dla zmienionej wiadomości... ");
-            bool isInvalid = lamport.Verify(message + "!", signature, publicKey);
-            Console.WriteLine($"{(!isInvalid ? "ODRZUCONY (jak powinno być)" : "BŁĄD!")}");
+            result.IsValidSignature = lamport.Verify(message, signature, publicKey);
+            result.IsInvalidRejected = !lamport.Verify(message + "!", signature, publicKey);
 
             // b) Pomiar czasu
-            Console.WriteLine("\nb) POMIAR WYDAJNOŚCI:");
-            Console.WriteLine(new string('-', 65));
-
-            int iterations = 100;
             var sw = Stopwatch.StartNew();
 
             // Generowanie kluczy
@@ -210,7 +211,7 @@ class Program
                 lamport.GenerateKeys();
             }
             sw.Stop();
-            double keyGenTime = sw.Elapsed.TotalMilliseconds / iterations;
+            result.KeyGenTime = sw.Elapsed.TotalMilliseconds / iterations;
 
             // Podpisywanie
             var (privKey, pubKey) = lamport.GenerateKeys();
@@ -220,7 +221,7 @@ class Program
                 lamport.Sign(message, privKey);
             }
             sw.Stop();
-            double signTime = sw.Elapsed.TotalMilliseconds / iterations;
+            result.SignTime = sw.Elapsed.TotalMilliseconds / iterations;
 
             // Weryfikacja
             var sig = lamport.Sign(message, privKey);
@@ -230,25 +231,102 @@ class Program
                 lamport.Verify(message, sig, pubKey);
             }
             sw.Stop();
-            double verifyTime = sw.Elapsed.TotalMilliseconds / iterations;
+            result.VerifyTime = sw.Elapsed.TotalMilliseconds / iterations;
 
-            Console.WriteLine($"Generowanie kluczy: {keyGenTime,10:F4} ms");
-            Console.WriteLine($"Podpisywanie:       {signTime,10:F4} ms");
-            Console.WriteLine($"Weryfikacja:        {verifyTime,10:F4} ms");
+            // c) Rozmiary
+            result.PrivateKeySize = lamport.GetPrivateKeySize();
+            result.PublicKeySize = lamport.GetPublicKeySize();
+            result.SignatureSize = lamport.GetSignatureSize();
 
-            // c) Rozmiar kluczy i podpisu
-            Console.WriteLine("\nc) ROZMIARY:");
-            Console.WriteLine(new string('-', 65));
-
-            int privateKeySize = lamport.GetPrivateKeySize();
-            int publicKeySize = lamport.GetPublicKeySize();
-            int signatureSize = lamport.GetSignatureSize();
-
-            Console.WriteLine($"Klucz prywatny:  {privateKeySize,7} B  ({privateKeySize / 1024.0,7:F2} KB)");
-            Console.WriteLine($"Klucz publiczny: {publicKeySize,7} B  ({publicKeySize / 1024.0,7:F2} KB)");
-            Console.WriteLine($"Podpis:          {signatureSize,7} B  ({signatureSize / 1024.0,7:F2} KB)");
-
-            Console.WriteLine();
+            results.Add(result);
         }
+
+        // Wyświetlenie podsumowania
+        DisplaySummary(results, message, iterations);
+    }
+
+    static void DisplaySummary(List<BenchmarkResult> results, string message, int iterations)
+    {
+        Console.WriteLine();
+        Console.WriteLine(new string('=', 80));
+        Console.WriteLine("  PODSUMOWANIE WYNIKÓW");
+        Console.WriteLine(new string('=', 80));
+        Console.WriteLine();
+
+        // a) Demonstracja działania
+        Console.WriteLine("a) DEMONSTRACJA DZIAŁANIA:");
+        Console.WriteLine(new string('-', 80));
+        Console.WriteLine($"Wiadomość: \"{message}\"");
+        Console.WriteLine();
+
+        Console.WriteLine($"{"Algorytm",-15} {"Weryfikacja",-20} {"Odrzucenie fałszu",-20}");
+        Console.WriteLine(new string('-', 80));
+        foreach (var result in results)
+        {
+            string validStatus = result.IsValidSignature ? "✓ POPRAWNY" : "✗ NIEPOPRAWNY";
+            string invalidStatus = result.IsInvalidRejected ? "✓ ODRZUCONY" : "✗ BŁĄD";
+            Console.WriteLine($"{result.AlgorithmName,-15} {validStatus,-20} {invalidStatus,-20}");
+        }
+
+        // b) Pomiar wydajności
+        Console.WriteLine();
+        Console.WriteLine("b) POMIAR WYDAJNOŚCI:");
+        Console.WriteLine(new string('-', 80));
+        Console.WriteLine($"Liczba iteracji: {iterations}");
+        Console.WriteLine();
+
+        Console.WriteLine($"{"Algorytm",-15} {"Generowanie [ms]",20} {"Podpisywanie [ms]",20} {"Weryfikacja [ms]",20}");
+        Console.WriteLine(new string('-', 80));
+        foreach (var result in results)
+        {
+            Console.WriteLine($"{result.AlgorithmName,-15} {result.KeyGenTime,20:F4} {result.SignTime,20:F4} {result.VerifyTime,20:F4}");
+        }
+
+        // Porównanie względne
+        Console.WriteLine();
+        Console.WriteLine("Porównanie względne (SHA256 = 1.00x):");
+        Console.WriteLine(new string('-', 80));
+        var baseline = results[0];
+        Console.WriteLine($"{"Algorytm",-15} {"Generowanie",20} {"Podpisywanie",20} {"Weryfikacja",20}");
+        Console.WriteLine(new string('-', 80));
+        foreach (var result in results)
+        {
+            double keyGenRatio = result.KeyGenTime / baseline.KeyGenTime;
+            double signRatio = result.SignTime / baseline.SignTime;
+            double verifyRatio = result.VerifyTime / baseline.VerifyTime;
+            Console.WriteLine($"{result.AlgorithmName,-15} {keyGenRatio,19:F2}x {signRatio,19:F2}x {verifyRatio,19:F2}x");
+        }
+
+        // c) Rozmiary
+        Console.WriteLine();
+        Console.WriteLine("c) ROZMIARY:");
+        Console.WriteLine(new string('-', 80));
+
+        Console.WriteLine($"{"Algorytm",-15} {"Klucz prywatny",25} {"Klucz publiczny",25} {"Podpis",25}");
+        Console.WriteLine(new string('-', 80));
+        foreach (var result in results)
+        {
+            string privKey = $"{result.PrivateKeySize,7} B ({result.PrivateKeySize / 1024.0,6:F2} KB)";
+            string pubKey = $"{result.PublicKeySize,7} B ({result.PublicKeySize / 1024.0,6:F2} KB)";
+            string sig = $"{result.SignatureSize,7} B ({result.SignatureSize / 1024.0,6:F2} KB)";
+            Console.WriteLine($"{result.AlgorithmName,-15} {privKey,-25} {pubKey,-25} {sig,-25}");
+        }
+
+        // Porównanie rozmiarów
+        Console.WriteLine();
+        Console.WriteLine("Porównanie rozmiarów (SHA256 = 1.00x):");
+        Console.WriteLine(new string('-', 80));
+        Console.WriteLine($"{"Algorytm",-15} {"Klucz prywatny",20} {"Klucz publiczny",20} {"Podpis",20}");
+        Console.WriteLine(new string('-', 80));
+        foreach (var result in results)
+        {
+            double privKeyRatio = (double)result.PrivateKeySize / baseline.PrivateKeySize;
+            double pubKeyRatio = (double)result.PublicKeySize / baseline.PublicKeySize;
+            double sigRatio = (double)result.SignatureSize / baseline.SignatureSize;
+            Console.WriteLine($"{result.AlgorithmName,-15} {privKeyRatio,19:F2}x {pubKeyRatio,19:F2}x {sigRatio,19:F2}x");
+        }
+
+        Console.WriteLine();
+        Console.WriteLine(new string('=', 80));
     }
 }
